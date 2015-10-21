@@ -15,7 +15,7 @@ public class Parser2 implements Parser {
 	private Grammar grammar;
 	private Lexicon lexicon;
 	CounterMap<String, String> scores = new CounterMap<String, String>();
-
+	HashMap<Triplet<Integer, Integer, String>, Triplet<Integer, String, String>> backs = new HashMap<Triplet<Integer, Integer, String>, Triplet<Integer, String, String>>();
 	// Data structure
 	private int[][] scoreIdx;
 	// Single Dimenionized Array for Storing score for given begin/end
@@ -92,6 +92,8 @@ public class Parser2 implements Parser {
 
 				// score.put(tag, lexicon.scoreTagging(sentence.get(i), tag));
 				back.put(tag, new Triplet<Integer, String, String>(-1, sentence.get(i), ""));
+				backs.put(new Triplet<Integer, Integer, String>(i, i + 1, tag),
+						new Triplet<Integer, String, String>(-1, "", sentence.get(i)));
 			}
 
 			// Handling unary rules, apply as much as rule until no unary rule
@@ -110,6 +112,8 @@ public class Parser2 implements Parser {
 
 							// score.put(r.getParent(), prob);
 							back.put(r.getParent(), new Triplet<Integer, String, String>(-1, r.getChild(), ""));
+							backs.put(new Triplet<Integer, Integer, String>(i, i + 1, r.getParent()),
+									new Triplet<Integer, String, String>(-1, "", key));
 							added = true;
 						}
 					}
@@ -161,6 +165,9 @@ public class Parser2 implements Parser {
 								// score.put(br.getParent(), prob);
 								back.put(br.getParent(), new Triplet<Integer, String, String>(split, br.getLeftChild(),
 										br.getRightChild()));
+								backs.put(new Triplet<Integer, Integer, String>(begin, end, br.getParent()),
+										new Triplet<Integer, String, String>(split, br.getLeftChild(),
+												br.getRightChild()));
 							}
 						}
 					}
@@ -170,7 +177,7 @@ public class Parser2 implements Parser {
 				boolean added = true;
 				while (added) {
 					added = false;
-					// Set<String> S = new HashSet<String>(score.keySet());
+					Set<String> S = new HashSet<String>(scores.getCounter(A).keySet());
 					for (String key : scores.getCounter(A).keySet()) {
 						for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
 							// double prob = score.get(key) * r.getScore();
@@ -186,6 +193,9 @@ public class Parser2 implements Parser {
 
 								// score.put(r.getParent(), prob);
 								back.put(r.getParent(), new Triplet<Integer, String, String>(-1, r.getChild(), ""));
+								backs.put(new Triplet<Integer, Integer, String>(begin, end, r.getParent()),
+										new Triplet<Integer, String, String>(-1, "", key));
+
 								added = true;
 							}
 						}
@@ -202,7 +212,35 @@ public class Parser2 implements Parser {
 		}
 
 		// Backtrack to build tree
-		Tree<String> bestTree = backtrackBuildTree(0, sentence.size(), "ROOT");
+		Tree<String> bestTree = buildTree(0, sentence.size(), "ROOT");
 		return TreeAnnotations.unAnnotateTree(bestTree);
+	}
+
+	private Tree<String> buildTree(int begin, int end, String tag) {
+		Triplet<Integer, String, String> tmp = backs.get(new Triplet<Integer, Integer, String>(begin, end, tag));
+		Tree<String> result;
+		if (tmp == null) {
+			return new Tree<String>(tag);
+		}
+
+		if (tmp.getFirst() == -1) {
+			Tree<String> subTree = null;
+			if (tmp.getThird().equals(tag))
+				subTree = new Tree<String>(tmp.getThird());
+
+			else
+				subTree = buildTree(begin, end, tmp.getThird());
+			result = new Tree<String>(tag, Collections.singletonList(subTree));
+			return result;
+		} else {
+			Tree<String> leftTree = buildTree(begin, tmp.getFirst(), tmp.getSecond());
+			Tree<String> rightTree = buildTree(tmp.getFirst(), end, tmp.getThird());
+			List<Tree<String>> child = new ArrayList<Tree<String>>();
+			child.add(leftTree);
+			child.add(rightTree);
+			result = new Tree<String>(tag, child);
+			return result;
+
+		}
 	}
 }
