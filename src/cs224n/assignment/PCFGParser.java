@@ -9,8 +9,6 @@ import cs224n.util.Triplet;
 
 import java.util.*;
 
-import com.sun.swing.internal.plaf.metal.resources.metal_zh_TW;
-
 /**
  * The CKY PCFG Parser you will implement.
  */
@@ -18,14 +16,18 @@ public class PCFGParser implements Parser {
 	private Grammar grammar;
 	private Lexicon lexicon;
 
-	CounterMap<Pair<Integer, Integer>, String> score = new CounterMap<Pair<Integer, Integer>, String>();
+	CounterMap<String, String> score = new CounterMap<String, String>();
 	HashMap<Triplet<Integer, Integer, String>, Triplet<Integer, String, String>> back = new HashMap<Triplet<Integer, Integer, String>, Triplet<Integer, String, String>>();
 
 	public void train(List<Tree<String>> trainTrees) {
 		// TODO: before you generate your grammar, the training trees
 		// need to be binarized so that rules are at most binary
-		lexicon = new Lexicon(trainTrees);
-		grammar = new Grammar(trainTrees);
+		List<Tree<String>> bTrees = new ArrayList<Tree<String>>();
+		for (Tree<String> tree : trainTrees) {
+			bTrees.add(TreeAnnotations.annotateTree(tree));
+		}
+		lexicon = new Lexicon(bTrees);
+		grammar = new Grammar(bTrees);
 	}
 
 	public Tree<String> getBestParse(List<String> sentence) {
@@ -36,12 +38,15 @@ public class PCFGParser implements Parser {
 
 	public void CKY(List<String> sentence) {
 		int N = sentence.size() + 1;
-		Pair<Integer, Integer> tmpPair = null;
-		for (int i = 0; i < N - 1; i++) {
-			tmpPair = new Pair<Integer, Integer>(i, i + 1);
+		String tmpPair = null;
+		for (int i = 0; i < N - 1; ++i) {
+			tmpPair = i + "+" + (i + 1);
 			for (String tag : lexicon.getAllTags()) {
-				if (lexicon.scoreTagging(sentence.get(i), tag) > 0)
+				if (lexicon.scoreTagging(sentence.get(i), tag) > 0) {
 					score.setCount(tmpPair, tag, lexicon.scoreTagging(sentence.get(i), tag));
+					back.put(new Triplet<Integer, Integer, String>(i, i + 1, tag),
+							new Triplet<Integer, String, String>(-1, "", sentence.get(i)));
+				}
 
 			}
 
@@ -51,7 +56,7 @@ public class PCFGParser implements Parser {
 				added = false;
 				for (String B : score.getCounter(tmpPair).keySet()) {
 					for (UnaryRule r : grammar.getUnaryRulesByChild(B)) {
-						double prob = score.getCounter(tmpPair).getCount(B);
+						double prob = score.getCounter(tmpPair).getCount(B) * r.score;
 						if (!score.getCounter(tmpPair).containsKey(r.getParent())
 								|| score.getCount(tmpPair, r.getParent()) < prob) {
 							score.setCount(tmpPair, r.getParent(), prob);
@@ -65,14 +70,14 @@ public class PCFGParser implements Parser {
 			}
 		}
 
-		for (int span = 2; span < N; span++) {
-			for (int begin = 0; begin < N - begin; begin++) {
+		for (int span = 2; span < N; ++span) {
+			for (int begin = 0; begin < N - span; ++begin) {
 				int end = begin + span;
-				Pair<Integer, Integer> A = new Pair<Integer, Integer>(begin, end);
+				String A = begin + "+" + end;
 
-				for (int split = begin + 1; split < end; split++) {
-					Pair<Integer, Integer> B = new Pair<Integer, Integer>(begin, split);
-					Pair<Integer, Integer> C = new Pair<Integer, Integer>(split, end);
+				for (int split = begin + 1; split < end; ++split) {
+					String B = begin + "+" + split;
+					String C = split + "+" + end;
 					for (String B_key : score.getCounter(B).keySet()) {
 
 						for (BinaryRule br : grammar.getBinaryRulesByLeftChild(B_key)) {
@@ -119,6 +124,10 @@ public class PCFGParser implements Parser {
 	private Tree<String> buildTree(int begin, int end, String tag) {
 		Triplet<Integer, String, String> tmp = back.get(new Triplet<Integer, Integer, String>(begin, end, tag));
 		Tree<String> result;
+		if (tmp == null) {
+			return new Tree<String>(tag);
+		}
+
 		if (tmp.getFirst() == -1) {
 			Tree<String> subTree = null;
 			if (tmp.getThird().equals(tag))
