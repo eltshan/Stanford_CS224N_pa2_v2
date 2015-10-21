@@ -138,14 +138,17 @@ public class Parser2 implements Parser {
 						System.err.println("Dynamic programming exception");
 					}
 
-					Map<String, Double> left = scoreTable.get(scoreIdx[begin][split]);
-					Map<String, Double> right = scoreTable.get(scoreIdx[split][end]);
+					// Map<String, Double> left =
+					// scoreTable.get(scoreIdx[begin][split]);
+					// Map<String, Double> right =
+					// scoreTable.get(scoreIdx[split][end]);
 
-					for (String leftKey : left.keySet()) {
+					for (String leftKey : scores.getCounter(B).keySet()) {
 						for (BinaryRule br : grammar.getBinaryRulesByLeftChild(leftKey)) {
-							if (!right.containsKey(br.getRightChild()))
+							if (!scores.getCounter(C).containsKey(br.getRightChild()))
 								continue;
-							double prob = left.get(br.getLeftChild()) * right.get(br.getRightChild()) * br.getScore();
+							double prob = scores.getCount(B, br.getLeftChild()) * scores.getCount(C, br.getRightChild())
+									* br.getScore();
 							// if (!score.containsKey(br.getParent()) ||
 							// scores.getCount(A, br.getParent()) < prob) {
 							if (!scores.getCounter(A).containsKey(br.getParent())
