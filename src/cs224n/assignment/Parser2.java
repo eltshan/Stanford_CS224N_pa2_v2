@@ -3,6 +3,7 @@ package cs224n.assignment;
 import cs224n.assignment.Grammar.UnaryRule;
 import cs224n.assignment.Grammar.BinaryRule;
 import cs224n.ling.Tree;
+import cs224n.util.CounterMap;
 import cs224n.util.Triplet;
 
 import java.util.*;
@@ -13,6 +14,7 @@ import java.util.*;
 public class Parser2 implements Parser {
 	private Grammar grammar;
 	private Lexicon lexicon;
+	CounterMap<String, String> scores = new CounterMap<String, String>();
 
 	// Data structure
 	private int[][] scoreIdx;
@@ -34,9 +36,6 @@ public class Parser2 implements Parser {
 
 	// Build tree
 	private Tree<String> backtrackBuildTree(int begin, int end, String tag) {
-		if (!(begin < end && scoreIdx[begin][end] != -1)) {
-			System.err.println("Build tree exception!");
-		}
 
 		Map<String, Triplet<Integer, String, String>> back = backTable.get(scoreIdx[begin][end]);
 		Triplet<Integer, String, String> triple = back.get(tag);
@@ -86,8 +85,11 @@ public class Parser2 implements Parser {
 		for (int i = 0; i < sentence.size(); ++i) {
 			Map<String, Double> score = new HashMap<String, Double>();
 			Map<String, Triplet<Integer, String, String>> back = new HashMap<String, Triplet<Integer, String, String>>();
+			String tmpPair = i + "+" + (i + 1);
 
 			for (String tag : lexicon.getAllTags()) {
+				scores.setCount(tmpPair, tag, lexicon.scoreTagging(sentence.get(i), tag));
+
 				score.put(tag, lexicon.scoreTagging(sentence.get(i), tag));
 				back.put(tag, new Triplet<Integer, String, String>(-1, sentence.get(i), ""));
 			}
@@ -102,6 +104,9 @@ public class Parser2 implements Parser {
 					for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
 						double prob = score.get(key) * r.getScore();
 						if (!score.containsKey(r.getParent()) || score.get(r.getParent()) < prob) {
+							scores.setCount(tmpPair, r.getParent(),
+									lexicon.scoreTagging(sentence.get(i), r.getParent()));
+
 							score.put(r.getParent(), prob);
 							back.put(r.getParent(), new Triplet<Integer, String, String>(-1, r.getChild(), ""));
 							added = true;
@@ -119,12 +124,15 @@ public class Parser2 implements Parser {
 			for (int begin = 0; begin <= sentence.size() - span; ++begin) {
 
 				int end = begin + span;
+				String A = begin + "+" + end;
+
 				Map<String, Double> score = new HashMap<String, Double>();
 				Map<String, Triplet<Integer, String, String>> back = new HashMap<String, Triplet<Integer, String, String>>();
 
 				// Binary rules
 				for (int split = begin + 1; split <= end - 1; ++split) {
-
+					String B = begin + "+" + split;
+					String C = split + "+" + end;
 					if (!(scoreIdx[begin][split] != -1 && scoreIdx[split][end] != -1)) {
 						System.err.println("Dynamic programming exception");
 					}
@@ -137,9 +145,11 @@ public class Parser2 implements Parser {
 							if (!right.containsKey(br.getRightChild()))
 								continue;
 							double prob = left.get(br.getLeftChild()) * right.get(br.getRightChild()) * br.getScore();
-							if (!score.containsKey(br.getParent()) || score.get(br.getParent()) < prob) {
+							if (!score.containsKey(br.getParent()) || scores.getCount(A, br.getParent()) < prob) {
 								// Filled the CKY table and track the split
 								// information
+								scores.setCount(A, br.getParent(), prob);
+
 								score.put(br.getParent(), prob);
 								back.put(br.getParent(), new Triplet<Integer, String, String>(split, br.getLeftChild(),
 										br.getRightChild()));
@@ -155,10 +165,16 @@ public class Parser2 implements Parser {
 					Set<String> S = new HashSet<String>(score.keySet());
 					for (String key : S) {
 						for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
-							double prob = score.get(key) * r.getScore();
-							if (!score.containsKey(r.getParent()) || score.get(r.getParent()) < prob) {
+							// double prob = score.get(key) * r.getScore();
+							double prob = scores.getCount(A, r.getParent()) * r.getScore();
+							// if (!score.containsKey(r.getParent()) ||
+							// score.get(r.getParent()) < prob) {
+							if (!score.containsKey(r.getParent()) || scores.getCount(A, r.getParent()) < prob) {
+
 								// Filled the CKY table and track the split
 								// information
+								scores.setCount(A, r.getParent(), prob);
+
 								score.put(r.getParent(), prob);
 								back.put(r.getParent(), new Triplet<Integer, String, String>(-1, r.getChild(), ""));
 								added = true;
