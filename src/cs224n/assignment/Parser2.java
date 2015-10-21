@@ -145,7 +145,7 @@ public class Parser2 implements Parser {
 							if (!right.containsKey(br.getRightChild()))
 								continue;
 							double prob = left.get(br.getLeftChild()) * right.get(br.getRightChild()) * br.getScore();
-							if (scores.getCount(A, br.getParent()) < prob) {
+							if ( scores.getCount(A, br.getParent()) < prob) {
 								// Filled the CKY table and track the split
 								// information
 								scores.setCount(A, br.getParent(), prob);
@@ -162,14 +162,14 @@ public class Parser2 implements Parser {
 				boolean added = true;
 				while (added) {
 					added = false;
-					//Set<String> S = new HashSet<String>(score.keySet());
-					for (String key : scores.getCounter(A).keySet()) {
+					Set<String> S = new HashSet<String>(score.keySet());
+					for (String key : S) {
 						for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
 							// double prob = score.get(key) * r.getScore();
 							double prob = scores.getCount(A, r.getParent()) * r.getScore();
 							// if (!score.containsKey(r.getParent()) ||
 							// score.get(r.getParent()) < prob) {
-							if (scores.getCount(A, r.getParent()) < prob) {
+							if ( scores.getCount(A, r.getParent()) < prob) {
 
 								// Filled the CKY table and track the split
 								// information
