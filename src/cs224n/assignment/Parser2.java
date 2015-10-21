@@ -103,7 +103,7 @@ public class Parser2 implements Parser {
 				for (String key : S) {
 					for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
 						double prob = score.get(key) * r.getScore();
-						if (!score.containsKey(r.getParent()) || score.get(r.getParent()) < prob) {
+						if (!scores.getCounter(tmpPair).containsKey(r.getParent()) || score.get(r.getParent()) < prob) {
 							scores.setCount(tmpPair, r.getParent(),
 									lexicon.scoreTagging(sentence.get(i), r.getParent()));
 
@@ -147,7 +147,8 @@ public class Parser2 implements Parser {
 							double prob = left.get(br.getLeftChild()) * right.get(br.getRightChild()) * br.getScore();
 							// if (!score.containsKey(br.getParent()) ||
 							// scores.getCount(A, br.getParent()) < prob) {
-							if (!score.containsKey(br.getParent()) || scores.getCount(A, br.getParent()) < prob) {
+							if (!scores.getCounter(A).containsKey(br.getParent())
+									|| scores.getCount(A, br.getParent()) < prob) {
 
 								// Filled the CKY table and track the split
 								// information
@@ -172,7 +173,8 @@ public class Parser2 implements Parser {
 							double prob = scores.getCount(A, r.getParent()) * r.getScore();
 							// if (!score.containsKey(r.getParent()) ||
 							// score.get(r.getParent()) < prob) {
-							if (!score.containsKey(r.getParent()) || scores.getCount(A, r.getParent()) < prob) {
+							if (!scores.getCounter(A).containsKey(br.getParent())
+									|| scores.getCount(A, r.getParent()) < prob) {
 
 								// Filled the CKY table and track the split
 								// information
