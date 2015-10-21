@@ -102,10 +102,8 @@ public class Parser2 implements Parser {
 				Set<String> S = new HashSet<String>(score.keySet());
 				for (String key : S) {
 					for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
-						double prob = scores.getCount(tmpPair, key) * r.getScore();
-						// if (!score.containsKey(r.getParent()) ||
-						// score.get(r.getParent()) < prob) {
-						if (scores.getCount(tmpPair, r.getParent()) < prob) {
+						double prob = score.get(key) * r.getScore();
+						if (!score.containsKey(r.getParent()) || score.get(r.getParent()) < prob) {
 							scores.setCount(tmpPair, r.getParent(),
 									lexicon.scoreTagging(sentence.get(i), r.getParent()));
 
@@ -164,7 +162,7 @@ public class Parser2 implements Parser {
 				boolean added = true;
 				while (added) {
 					added = false;
-					// Set<String> S = new HashSet<String>(score.keySet());
+					//Set<String> S = new HashSet<String>(score.keySet());
 					for (String key : scores.getCounter(A).keySet()) {
 						for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
 							// double prob = score.get(key) * r.getScore();
