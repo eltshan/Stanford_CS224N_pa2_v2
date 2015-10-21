@@ -145,7 +145,7 @@ public class Parser2 implements Parser {
 							if (!right.containsKey(br.getRightChild()))
 								continue;
 							double prob = left.get(br.getLeftChild()) * right.get(br.getRightChild()) * br.getScore();
-							if ( scores.getCount(A, br.getParent()) < prob) {
+							if (!score.containsKey(br.getParent()) || score.get(br.getParent()) < prob) {
 								// Filled the CKY table and track the split
 								// information
 								scores.setCount(A, br.getParent(), prob);
@@ -169,7 +169,7 @@ public class Parser2 implements Parser {
 							double prob = scores.getCount(A, r.getParent()) * r.getScore();
 							// if (!score.containsKey(r.getParent()) ||
 							// score.get(r.getParent()) < prob) {
-							if ( scores.getCount(A, r.getParent()) < prob) {
+							if (!score.containsKey(r.getParent()) || scores.getCount(A, r.getParent()) < prob) {
 
 								// Filled the CKY table and track the split
 								// information
