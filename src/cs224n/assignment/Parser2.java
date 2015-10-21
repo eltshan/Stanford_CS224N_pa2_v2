@@ -83,14 +83,14 @@ public class Parser2 implements Parser {
 
 		// Dynamic programming base case
 		for (int i = 0; i < sentence.size(); ++i) {
-			Map<String, Double> score = new HashMap<String, Double>();
+			// Map<String, Double> score = new HashMap<String, Double>();
 			Map<String, Triplet<Integer, String, String>> back = new HashMap<String, Triplet<Integer, String, String>>();
 			String tmpPair = i + "+" + (i + 1);
 
 			for (String tag : lexicon.getAllTags()) {
 				scores.setCount(tmpPair, tag, lexicon.scoreTagging(sentence.get(i), tag));
 
-				score.put(tag, lexicon.scoreTagging(sentence.get(i), tag));
+				// score.put(tag, lexicon.scoreTagging(sentence.get(i), tag));
 				back.put(tag, new Triplet<Integer, String, String>(-1, sentence.get(i), ""));
 			}
 
@@ -99,15 +99,16 @@ public class Parser2 implements Parser {
 			boolean added = true;
 			while (added) {
 				added = false;
-				Set<String> S = new HashSet<String>(score.keySet());
-				for (String key : S) {
+				// Set<String> S = new HashSet<String>(score.keySet());
+				for (String key : scores.getCounter(tmpPair).keySet()) {
 					for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
-						double prob = score.get(key) * r.getScore();
-						if (!scores.getCounter(tmpPair).containsKey(r.getParent()) || score.get(r.getParent()) < prob) {
+						double prob = scores.getCount(tmpPair, key) * r.getScore();
+						if (!scores.getCounter(tmpPair).containsKey(r.getParent())
+								|| scores.getCount(tmpPair, r.getParent()) < prob) {
 							scores.setCount(tmpPair, r.getParent(),
 									lexicon.scoreTagging(sentence.get(i), r.getParent()));
 
-							score.put(r.getParent(), prob);
+							// score.put(r.getParent(), prob);
 							back.put(r.getParent(), new Triplet<Integer, String, String>(-1, r.getChild(), ""));
 							added = true;
 						}
@@ -115,7 +116,7 @@ public class Parser2 implements Parser {
 				}
 			}
 			scoreIdx[i][i + 1] = scoreTable.size();
-			scoreTable.add(score);
+			// scoreTable.add(score);
 			backTable.add(back);
 		}
 
@@ -126,7 +127,7 @@ public class Parser2 implements Parser {
 				int end = begin + span;
 				String A = begin + "+" + end;
 
-				Map<String, Double> score = new HashMap<String, Double>();
+				// Map<String, Double> score = new HashMap<String, Double>();
 				Map<String, Triplet<Integer, String, String>> back = new HashMap<String, Triplet<Integer, String, String>>();
 
 				// Binary rules
@@ -154,7 +155,7 @@ public class Parser2 implements Parser {
 								// information
 								scores.setCount(A, br.getParent(), prob);
 
-								score.put(br.getParent(), prob);
+								// score.put(br.getParent(), prob);
 								back.put(br.getParent(), new Triplet<Integer, String, String>(split, br.getLeftChild(),
 										br.getRightChild()));
 							}
@@ -166,21 +167,21 @@ public class Parser2 implements Parser {
 				boolean added = true;
 				while (added) {
 					added = false;
-					Set<String> S = new HashSet<String>(score.keySet());
-					for (String key : S) {
+					// Set<String> S = new HashSet<String>(score.keySet());
+					for (String key : scores.getCounter(A).keySet()) {
 						for (UnaryRule r : grammar.getUnaryRulesByChild(key)) {
 							// double prob = score.get(key) * r.getScore();
 							double prob = scores.getCount(A, r.getParent()) * r.getScore();
 							// if (!score.containsKey(r.getParent()) ||
 							// score.get(r.getParent()) < prob) {
-							if (!scores.getCounter(key).containsKey(r.getParent())
+							if (!scores.getCounter(A).containsKey(r.getParent())
 									|| scores.getCount(A, r.getParent()) < prob) {
 
 								// Filled the CKY table and track the split
 								// information
 								scores.setCount(A, r.getParent(), prob);
 
-								score.put(r.getParent(), prob);
+								// score.put(r.getParent(), prob);
 								back.put(r.getParent(), new Triplet<Integer, String, String>(-1, r.getChild(), ""));
 								added = true;
 							}
@@ -192,7 +193,7 @@ public class Parser2 implements Parser {
 				// score and back locate in their list for given begin/end
 				// We use it for backtracking.
 				scoreIdx[begin][end] = scoreTable.size();
-				scoreTable.add(score);
+				// scoreTable.add(score);
 				backTable.add(back);
 			}
 		}
