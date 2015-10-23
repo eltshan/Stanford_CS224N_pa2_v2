@@ -26,7 +26,8 @@ public class TreeAnnotations {
 		// TODO : mark nodes with the label of their parent nodes, giving a
 		// second
 		// order vertical markov process
-		Tree<String> tmp = VerticalMarkovnize(unAnnotatedTree, "", false);
+		Tree<String> tmp = AddParents(unAnnotatedTree, "", 0);// VerticalMarkovnize(unAnnotatedTree,
+																// "", false);
 		return binarizeTree(tmp);
 
 	}
@@ -58,6 +59,20 @@ public class TreeAnnotations {
 		return new Tree<String>(intermediateLabel, children);
 	}
 
+	/*
+	 * private static Tree<String> MarkovizationAnnotationHelper(Tree<String>
+	 * tree, int numChildrenGenerated, String intermediateLabel) { Tree<String>
+	 * leftTree = tree.getChildren().get(numChildrenGenerated);
+	 * List<Tree<String>> children = new ArrayList<Tree<String>>();
+	 * children.add(binarizeTree(leftTree)); if (numChildrenGenerated <
+	 * tree.getChildren().size() - 1) { Tree<String> rightTree =
+	 * binarizeTreeHelper(tree, numChildrenGenerated + 1, intermediateLabel +
+	 * "_" + leftTree.getLabel()); children.add(rightTree); }
+	 * 
+	 * 
+	 * 
+	 * return new Tree<String>(intermediateLabel, children); }
+	 */
 	public static Tree<String> unAnnotateTree(Tree<String> annotatedTree) {
 
 		// Remove intermediate nodes (labels beginning with "@"
@@ -74,6 +89,27 @@ public class TreeAnnotations {
 		Tree<String> unAnnotatedTree = (new Trees.FunctionNodeStripper()).transformTree(debinarizedTree);
 		Tree<String> unMarkovizedTree = (new Trees.MarkovizationAnnotationStripper()).transformTree(unAnnotatedTree);
 		return unMarkovizedTree;
+	}
+
+	private static Tree<String> AddParents(Tree<String> tree, String parent, int numberOfAncestors) {
+		if (tree.isLeaf())
+			return new Tree<String>(tree.getLabel());
+		String currentLabel = tree.getLabel();
+		if (parent.length() != 0) {
+			currentLabel = currentLabel + parent;
+			++numberOfAncestors;
+		}
+		if (numberOfAncestors == order) {
+			int end = currentLabel.lastIndexOf("^");
+			currentLabel = currentLabel.substring(0, end);
+			--numberOfAncestors;
+		}
+
+		ArrayList<Tree<String>> children = new ArrayList<Tree<String>>();
+		for (Tree<String> node : tree.getChildren()) {
+			children.add(AddParents(node, currentLabel, order));
+		}
+		return new Tree<String>(currentLabel, children);
 	}
 
 	private static Tree<String> VerticalMarkovnize(Tree<String> tree, String parent, boolean withParent) {
